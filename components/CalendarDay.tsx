@@ -1,22 +1,19 @@
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ApiMatchData, MatchLocation } from '../constants/types';
+import {
+  ApiMatchData,
+  LocationTrans,
+  MatchDayData,
+  MatchLocation,
+  ResultFlags,
+} from '../constants/types';
 
 const gap = 12;
 const daysInWeek = 7;
 const flexBasisValue = `${(100 - gap) / daysInWeek}%`;
 
-enum resultFlags {
-  win = 'V',
-  loss = 'P',
-  draw = 'R',
-}
-
-enum locations {
-  home = 'DOMA',
-  away = 'VENKU',
-}
+const MY_TEAM_ID = 'SLA';
 
 interface CalendarDayProps {
   calendarDay: number | null;
@@ -37,7 +34,7 @@ export default function CalendarDay({
   //   return null;
   // }
 
-  const [matchLocation, setMatchLocation] = useState<MatchLocation>(null);
+  const [matchDayData, setMatchDayData] = useState<MatchDayData | null>(null);
 
   const getMatchDate = (matchDate: string) => {
     return new Date(matchDate).getUTCDate() === calendarDay;
@@ -45,61 +42,71 @@ export default function CalendarDay({
 
   useEffect(() => {
     const determineMatchLocation = () => {
-      if (!matchData) return;
+      if (!matchData) return null;
 
       const match = matchData.find((matchItem) =>
         getMatchDate(matchItem.matchDate)
       );
-      if (match) {
-        if (match.homeTeamId === 'SLA') {
-          setMatchLocation('home');
-        } else if (match.awayTeamId === 'SLA') {
-          setMatchLocation('away');
-        }
+      if (
+        !(
+          match &&
+          (match.homeTeamId === MY_TEAM_ID || match.awayTeamId === MY_TEAM_ID)
+        )
+      )
+        return null;
+      if (match.homeTeamId === MY_TEAM_ID) {
+        setMatchDayData({
+          location: MatchLocation.home,
+          trans: {
+            location: LocationTrans.home,
+          },
+          logo: match.awayTeam.logo,
+          myTeamScore: match.homeTeamScore,
+          opponentTeamScore: match.awayTeamScore,
+        });
+      } else {
+        setMatchDayData({
+          location: MatchLocation.away,
+          trans: {
+            location: LocationTrans.away,
+          },
+          logo: match.homeTeam.logo,
+          myTeamScore: match.awayTeamScore,
+          opponentTeamScore: match.homeTeamScore,
+        });
       }
     };
 
     determineMatchLocation();
   }, [matchData, calendarDay]);
 
-  const getMatchLocationText = () => {
-    let locationText = '';
-    return matchLocation === 'home'
-      ? (locationText = locations.home)
-      : matchLocation === 'away'
-      ? (locationText = locations.away)
-      : null;
+  const getResultFlag = (myTeamScore: number, opponentTeamScore: number) => {
+    if (myTeamScore > opponentTeamScore) {
+      return ResultFlags.win;
+    } else if (myTeamScore < opponentTeamScore) {
+      return ResultFlags.loss;
+    }
+    return ResultFlags.draw;
   };
 
-  const getLogo = (match: ApiMatchData) => {
-    return matchLocation === 'home'
-      ? match.awayTeam.logo
-      : matchLocation === 'away'
-      ? match.homeTeam.logo
-      : null;
-  };
-
+  // vytvorit subtyp pro match
   const getFinishedMatchResult = (match: ApiMatchData) => {
-    if (!(match.isFinished && match.homeTeamScore && match.awayTeamScore)) {
+    if (
+      !(
+        match.isFinished &&
+        match.homeTeamScore &&
+        match.awayTeamScore &&
+        matchDayData?.myTeamScore &&
+        matchDayData?.opponentTeamScore
+      )
+    ) {
       return null;
     }
 
-    const myTeamScore =
-      matchLocation === 'home' ? match.homeTeamScore : match.awayTeamScore;
-    const opponentScore =
-      matchLocation === 'home' ? match.awayTeamScore : match.homeTeamScore;
-
-    let resultFlag = ' ';
-
-    if (myTeamScore > opponentScore) {
-      resultFlag = resultFlags.win;
-    } else if (myTeamScore < opponentScore) {
-      resultFlag = resultFlags.loss;
-    } else {
-      resultFlag = resultFlags.draw;
-    }
-
-    return `${resultFlag} ${match.homeTeamScore} : ${match.awayTeamScore}`;
+    return `${getResultFlag(
+      matchDayData.myTeamScore,
+      matchDayData.opponentTeamScore
+    )} ${match.homeTeamScore} : ${match.awayTeamScore}`;
   };
 
   return (
@@ -107,14 +114,14 @@ export default function CalendarDay({
       style={[
         styles.dayCell,
         !calendarDay && styles.emptyCell,
-        matchLocation ? styles.dayCellMatch : null,
+        matchDayData ? styles.dayCellMatch : null,
       ]}>
       <View
         style={[
           styles.dayHeader,
-          matchLocation === 'home'
+          matchDayData?.location === MatchLocation.home
             ? styles.homeMatchStyle
-            : matchLocation === 'away'
+            : matchDayData?.location === MatchLocation.away
             ? styles.awayMatchStyle
             : styles.dayHeaderNumber,
         ]}>
@@ -122,11 +129,13 @@ export default function CalendarDay({
           style={[
             styles.dayNumber,
             calendarDay === currentDate.date() && styles.currentDay,
-            matchLocation ? styles.dayNumberWithMatch : null,
+            matchDayData ? styles.dayNumberWithMatch : null,
           ]}>
           {calendarDay !== null ? calendarDay : ''}
         </Text>
-        <Text style={styles.matchLocationText}>{getMatchLocationText()}</Text>
+        <Text style={styles.matchLocationText}>
+          {matchDayData?.trans.location}
+        </Text>
       </View>
 
       {matchData
@@ -136,7 +145,7 @@ export default function CalendarDay({
             <React.Fragment key={index}>
               <View style={styles.teamLogo}>
                 <Image
-                  source={getLogo(match)}
+                  source={matchDayData?.logo}
                   style={styles.logoImage}
                 />
               </View>

@@ -17,4 +17,28 @@ export type ApiMatchData = {
   };
 };
 
-export type MatchLocation = 'home' | 'away' | null;
+export enum ResultFlags {
+  win = 'V',
+  loss = 'P',
+  draw = 'R',
+}
+
+export enum LocationTrans {
+  home = 'DOMA',
+  away = 'VENKU',
+}
+
+export enum MatchLocation {
+  home = 'home',
+  away = 'away',
+}
+
+export type MatchDayData = {
+  location: MatchLocation;
+  trans: {
+    location: LocationTrans;
+  };
+  logo: string;
+  myTeamScore?: number;
+  opponentTeamScore?: number;
+};
