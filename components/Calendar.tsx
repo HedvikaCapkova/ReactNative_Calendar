@@ -1,10 +1,10 @@
-import { ApiMatchData } from '@/constants/types';
+import { ApiMatchData, WeekdaysTrl } from '@/constants/types';
 import { useData } from '@/hooks/useData';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import weekday from 'dayjs/plugin/weekday';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CalendarDay from './CalendarDay';
 
 dayjs.extend(updateLocale);
@@ -21,23 +21,25 @@ const flexBasisValue = `${(100 - gap) / daysInWeek}%`;
 interface CalendarProps {
   year: number;
   month: number;
+  myTeamId: string;
 }
 
 export const Calendar = ({
   year,
   month,
+  myTeamId,
 }: CalendarProps): JSX.Element | null => {
   const [matchData, setMatchData] = useState<ApiMatchData[] | null>(null);
+  const [currentYear, setCurrentYear] = useState<number>(dayjs().year());
+  const [currentMonth, setCurrentMonth] = useState<number>(dayjs().month());
 
-  useData(setMatchData);
+  useData({ month: currentMonth, year: currentYear, setMatchData });
 
   if (!matchData) {
     return null;
   }
 
-  const currentDate = dayjs()
-    .year(year)
-    .month(month - 1);
+  const currentDate = dayjs().year(currentYear).month(currentMonth);
   const firstDayOfMonth = currentDate.startOf('month');
   const daysInMonth = currentDate.daysInMonth();
   const startingDayOfWeek = firstDayOfMonth.weekday();
@@ -64,14 +66,44 @@ export const Calendar = ({
     return days;
   };
 
-  const weekDays = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ', 'SO', 'NE'];
+  const weekDays: WeekdaysTrl[] = [
+    WeekdaysTrl.monday,
+    WeekdaysTrl.tuesday,
+    WeekdaysTrl.wednesday,
+    WeekdaysTrl.thursday,
+    WeekdaysTrl.friday,
+    WeekdaysTrl.saturday,
+    WeekdaysTrl.sunday,
+  ];
   const calendarDays = generateCalendarDays();
 
-  //   console.log(matchData);
+  const goToNextMonth = () => {
+    if (currentMonth === 12) {
+      setCurrentMonth(1);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const goToPreviousMonth = () => {
+    if (currentMonth === 1) {
+      setCurrentMonth(12);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>{currentDate.format('MMMM YYYY')}</Text>
+      <TouchableOpacity onPress={goToPreviousMonth}>
+        <Text style={styles.text}>BACK</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={goToNextMonth}>
+        <Text style={styles.text}>NEXT</Text>
+      </TouchableOpacity>
 
       <View style={styles.calendarContainer}>
         <View style={styles.weekdayHeader}>
@@ -89,9 +121,11 @@ export const Calendar = ({
             return (
               <CalendarDay
                 key={index}
-                calendarDay={day}
-                currentDate={currentDate}
-                matchData={matchData}></CalendarDay>
+                daysArrItem={day}
+                displayedMonth={currentMonth}
+                displayedYear={currentYear}
+                matchData={matchData}
+                myTeamId={myTeamId}></CalendarDay>
             );
           })}
         </View>
@@ -108,9 +142,13 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: 700,
     textAlign: 'center',
-
+    color: '#fff',
+  },
+  text: {
+    fontWeight: 400,
+    fontSize: 12,
     color: '#fff',
   },
   calendarContainer: {

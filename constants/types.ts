@@ -17,13 +17,19 @@ export type ApiMatchData = {
   };
 };
 
-export enum ResultFlags {
+export type ScoreData = {
+  homeTeamScore?: number;
+  awayTeamScore?: number;
+  isFinished: boolean;
+};
+
+export enum ResultFlagsTrl {
   win = 'V',
   loss = 'P',
   draw = 'R',
 }
 
-export enum LocationTrans {
+export enum LocationTrl {
   home = 'DOMA',
   away = 'VENKU',
 }
@@ -35,10 +41,20 @@ export enum MatchLocation {
 
 export type MatchDayData = {
   location: MatchLocation;
-  trans: {
-    location: LocationTrans;
+  trl: {
+    location: LocationTrl;
   };
   logo: string;
   myTeamScore?: number;
   opponentTeamScore?: number;
 };
+
+export enum WeekdaysTrl {
+  monday = 'PO',
+  tuesday = 'ÚT',
+  wednesday = 'ST',
+  thursday = 'ČT',
+  friday = 'PÁ',
+  saturday = 'SO',
+  sunday = 'NE',
+}
