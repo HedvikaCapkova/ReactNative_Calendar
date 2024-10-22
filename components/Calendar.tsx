@@ -1,4 +1,4 @@
-import { ApiMatchData, WeekdaysTrl } from '@/constants/types';
+import { WeekdaysTrl } from '@/constants/types';
 import { useData } from '@/hooks/useData';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
@@ -29,11 +29,21 @@ export const Calendar = ({
   month,
   myTeamId,
 }: CalendarProps): JSX.Element | null => {
-  const [matchData, setMatchData] = useState<ApiMatchData[] | null>(null);
   const [currentYear, setCurrentYear] = useState<number>(dayjs().year());
   const [currentMonth, setCurrentMonth] = useState<number>(dayjs().month());
 
-  useData({ month: currentMonth, year: currentYear, setMatchData });
+  const { matchData, isLoading, isError } = useData({
+    month: currentMonth,
+    year: currentYear,
+  });
+
+  if (isLoading) {
+    return <Text>Loading...</Text>;
+  }
+
+  if (isError) {
+    return <Text>Error loading data...</Text>;
+  }
 
   if (!matchData) {
     return null;

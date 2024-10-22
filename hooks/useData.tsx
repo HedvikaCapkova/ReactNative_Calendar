@@ -1,43 +1,42 @@
 import { ApiMatchData } from '@/constants/types';
 import dayjs from 'dayjs';
-import { useEffect } from 'react';
+import useSWR from 'swr';
 
 interface useDataProps {
   month: number;
   year: number;
-  setMatchData: React.Dispatch<React.SetStateAction<ApiMatchData[] | null>>;
 }
 
-export function useData({ month, year, setMatchData }: useDataProps) {
-  useEffect(() => {
-    const fetchMatchData = async (): Promise<void> => {
-      const [finishedData, futureData] = await Promise.all([
-        fetch(
-          'https://hcsparta.tpapp.cz/match/list/finished/?teamId=MUZ&year=2025'
-        )
-          .then((response) => (response.ok ? response.json() : []))
-          .catch(() => []),
-        fetch(
-          'https://hcsparta.tpapp.cz/match/list/future/?teamId=MUZ&year=2025&includeLive=true'
-        )
-          .then((response) => (response.ok ? response.json() : []))
-          .catch(() => []),
-        ,
-      ]);
+export function useData({ month, year }: useDataProps) {
+  const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-      if (!finishedData.length && !futureData.length) {
-        return;
-      }
+  const { data: finishedData, error: finishedError } = useSWR(
+    'https://hcsparta.tpapp.cz/match/list/finished/?teamId=MUZ&year=2025',
+    fetcher
+  );
 
-      const matchData: ApiMatchData[] = [...finishedData, ...futureData];
+  const { data: futureData, error: futureError } = useSWR(
+    'https://hcsparta.tpapp.cz/match/list/future/?teamId=MUZ&year=2025&includeLive=true',
+    fetcher
+  );
 
-      const filteredMatchData = matchData.filter((match) => {
-        const matchDate = dayjs(match.matchDate);
-        return matchDate.month() === month && matchDate.year() === year;
-      });
+  const isLoading = !finishedData && !futureData;
+  const isError = finishedError || futureError;
 
-      setMatchData(filteredMatchData);
-    };
-    fetchMatchData();
-  }, [month, year]);
+  let filteredMatchData: ApiMatchData[] = [];
+
+  if (finishedData && futureData) {
+    const matchData: ApiMatchData[] = [...finishedData, ...futureData];
+
+    filteredMatchData = matchData.filter((match) => {
+      const matchDate = dayjs(match.matchDate);
+      return matchDate.month() === month && matchDate.year() === year;
+    });
+  }
+
+  return {
+    matchData: filteredMatchData,
+    isLoading,
+    isError,
+  };
 }
