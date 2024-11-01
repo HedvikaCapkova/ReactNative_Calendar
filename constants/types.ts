@@ -58,3 +58,8 @@ export enum WeekdaysTrl {
   saturday = 'SO',
   sunday = 'NE',
 }
+
+export enum ViewLayout {
+  calendar = 'calendar',
+  matchList = 'matchList',
+}

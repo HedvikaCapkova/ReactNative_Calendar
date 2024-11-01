@@ -1,36 +1,39 @@
-import { WeekdaysTrl } from '@/constants/types';
 import { useData } from '@/hooks/useData';
 import dayjs from 'dayjs';
+import dayjs_localeData from 'dayjs/plugin/localeData.js';
+import dayjs_localizedFormat from 'dayjs/plugin/localizedFormat';
 import updateLocale from 'dayjs/plugin/updateLocale';
-import weekday from 'dayjs/plugin/weekday';
+import {
+  default as dayjs_weekday,
+  default as weekday,
+} from 'dayjs/plugin/weekday';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import CalendarDay from './CalendarDay';
+import ArrowLeft from './navigation/ArrowLeft';
+import ArrowRight from './navigation/ArrowRight';
 
 dayjs.extend(updateLocale);
 dayjs.extend(weekday);
+dayjs.extend(dayjs_localeData);
+dayjs.extend(dayjs_localizedFormat);
+dayjs.extend(dayjs_weekday);
 
-dayjs.updateLocale('en', {
-  weekStart: 1,
-});
+console.log(dayjs.locale());
 
 const daysInWeek = 7;
 const gap = 12;
 const flexBasisValue = `${(100 - gap) / daysInWeek}%`;
 
 interface CalendarProps {
-  year: number;
-  month: number;
   myTeamId: string;
 }
 
-export const Calendar = ({
-  year,
-  month,
-  myTeamId,
-}: CalendarProps): JSX.Element | null => {
+export const Calendar = ({ myTeamId }: CalendarProps): JSX.Element | null => {
   const [currentYear, setCurrentYear] = useState<number>(dayjs().year());
   const [currentMonth, setCurrentMonth] = useState<number>(dayjs().month());
+
+  // useReducer
 
   const { matchData, isLoading, isError } = useData({
     month: currentMonth,
@@ -76,15 +79,7 @@ export const Calendar = ({
     return days;
   };
 
-  const weekDays: WeekdaysTrl[] = [
-    WeekdaysTrl.monday,
-    WeekdaysTrl.tuesday,
-    WeekdaysTrl.wednesday,
-    WeekdaysTrl.thursday,
-    WeekdaysTrl.friday,
-    WeekdaysTrl.saturday,
-    WeekdaysTrl.sunday,
-  ];
+  const weekDays = dayjs.weekdaysShort(true);
   const calendarDays = generateCalendarDays();
 
   const goToNextMonth = () => {
@@ -107,13 +102,23 @@ export const Calendar = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{currentDate.format('MMMM YYYY')}</Text>
-      <TouchableOpacity onPress={goToPreviousMonth}>
-        <Text style={styles.text}>BACK</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={goToNextMonth}>
-        <Text style={styles.text}>NEXT</Text>
-      </TouchableOpacity>
+      <View style={styles.headerRowContainer}>
+        <View style={styles.headerContainer}>
+          <Pressable
+            style={styles.arrow}
+            onPress={goToPreviousMonth}>
+            <ArrowLeft></ArrowLeft>
+          </Pressable>
+          <Text style={styles.monthYearText}>
+            {currentDate.format('MMMM YYYY')}
+          </Text>
+          <Pressable
+            style={styles.arrow}
+            onPress={goToNextMonth}>
+            <ArrowRight></ArrowRight>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={styles.calendarContainer}>
         <View style={styles.weekdayHeader}>
@@ -147,19 +152,50 @@ export const Calendar = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#041025',
-    paddingHorizontal: 24,
-    paddingVertical: 19,
   },
-  header: {
-    fontSize: 20,
-    fontWeight: 700,
-    textAlign: 'center',
-    color: '#fff',
+  headerRowContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
-  text: {
+  iconsContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    backgroundColor: '#112342',
+    width: 84,
+    height: 44,
+    padding: 2,
+    borderRadius: 4,
+  },
+  icon: {
+    width: 40,
+    height: 40,
+    borderRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeIcon: {
+    backgroundColor: '#49A2E2',
+  },
+  arrow: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 6,
+  },
+  monthYearText: {
+    fontSize: 18,
     fontWeight: 400,
-    fontSize: 12,
-    color: '#fff',
+    textAlign: 'center',
+    color: '#95C9EE',
   },
   calendarContainer: {
     overflow: 'hidden',
